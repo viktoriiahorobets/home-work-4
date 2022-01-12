@@ -2,7 +2,7 @@ package module2
 
 object type_classes {
 
-  sealed trait JsValue
+ /* sealed trait JsValue
   object JsValue {
     final case class JsObject(get: Map[String, JsValue]) extends JsValue
     final case class JsString(get: String) extends JsValue
@@ -104,7 +104,7 @@ object type_classes {
     def ===(b: T)(implicit eq: Eq[T]): Boolean = eq.===(a, b)
   }
 
-
+*/
 
  /**
    * 
@@ -112,14 +112,28 @@ object type_classes {
    * Доработать Bindable и метод tupleF под type class pattern
    */
 
-  def tupleF[F[_], A, B](fa: F[A], fb: F[B]) = ???
+ implicit def tupleF[F[_], A, B](fa: F[A], fb: F[B])(implicit bindable: F[A] => Bindable[F, A],
+                                                     bindable2: F[B] => Bindable[F, B]): F[(A, B)] =
+   fa.flatMap(a => fb.map(b => (a, b)))
 
   trait Bindable[F[_], A] {
     def map[B](f: A => B): F[B]
     def flatMap[B](f: A => F[B]): F[B]
   }
 
-   val optA: Option[Int] = Some(1)
+  object Bindable{
+    implicit def optBindable[A](opt: Option[A]): Bindable[Option, A] = new Bindable[Option, A] {
+      def map[B](f: A => B): Option[B] = opt.map(f)
+      def flatMap[B](f: A => Option[B]): Option[B] = opt.flatMap(f)
+    }
+
+    implicit def listBindable[A](list: List[A]): Bindable[List, A] = new Bindable[List, A] {
+      def map[B](f: A => B): List[B] = list.map(f)
+      def flatMap[B](f: A => List[B]): List[B] = list.flatMap(f)
+    }
+  }
+
+  val optA: Option[Int] = Some(1)
   val optB: Option[Int] = Some(2)
 
   val list1 = List(1, 2, 3)
